@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Unit + integration tests (DuckDB; Kafka skip if no compose)
+        run: pytest -q --cov=pipeline --cov-report=term-missing
+
+      - name: Set up Java (Spark smoke)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install PySpark and run smoke
+        run: |
+          pip install 'pyspark>=3.5.0'
+          pytest -q tests/test_spark_smoke.py -k spark_local
+
+      - name: Local pipeline script smoke
+        run: |
+          chmod +x scripts/run_pipeline.sh scripts/run_local_pipeline.sh
+          ./scripts/run_pipeline.sh

@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realtime-ecommerce-analytics-pipeline"
+version = "1.0.0"
+description = "Real-time e-commerce analytics pipeline: Kafka → Spark → star-schema warehouse"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Douae El Assal", email = "douae@users.noreply.github.com" }]
+requires-python = ">=3.10"
+dependencies = [
+  "pydantic>=2.5",
+  "kafka-python>=2.0.2",
+  "duckdb>=0.10.0",
+  "psycopg2-binary>=2.9.9",
+  "pyyaml>=6.0",
+  "python-dateutil>=2.8",
+]
+
+[project.optional-dependencies]
+spark = ["pyspark>=3.5.0"]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.1",
+]
+
+[project.scripts]
+clickstream-producer = "pipeline.producer.simulator:main"
+pipeline-batch = "pipeline.spark.batch_job:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --tb=short"
+markers = [
+  "integration: optional stack smokes (Docker/Kafka); skip when unavailable",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

@@ -1,0 +1,42 @@
+pipeline:
+  name: realtime-ecommerce-analytics
+  version: "1.0.0"
+
+kafka:
+  bootstrap: "${KAFKA_BOOTSTRAP:localhost:19092}"
+  topic: clickstream.events
+  consumer_group: ecom-spark-transformers
+  # Optional SASL (see .env.example) — leave unset for local Redpanda PLAINTEXT
+  security_protocol: "${KAFKA_SECURITY_PROTOCOL:}"
+  sasl_mechanism: "${KAFKA_SASL_MECHANISM:}"
+  sasl_username: "${KAFKA_SASL_USERNAME:}"
+  # sasl_password: from env KAFKA_SASL_PASSWORD only — never inline here
+
+spark:
+  master: "${SPARK_MASTER:local[*]}"
+  shuffle_partitions: 4
+  watermark: "24 hours"
+  checkpoint: data/checkpoints/clickstream
+
+sink:
+  # duckdb (local first-class) | snowflake (optional cloud)
+  backend: "${SINK_BACKEND:duckdb}"
+  duckdb_path: "${DUCKDB_PATH:data/warehouse/analytics.duckdb}"
+  snowflake:
+    # Credentials exclusively from env: SNOWFLAKE_ACCOUNT / USER / PASSWORD
+    database: "${SNOWFLAKE_DATABASE:ECOM_ANALYTICS}"
+    schema: "${SNOWFLAKE_SCHEMA:MART}"
+    warehouse: "${SNOWFLAKE_WAREHOUSE:ANALYTICS_WH}"
+
+star_schema:
+  facts:
+    - fact_orders
+    - fact_clicks
+  dimensions:
+    - dim_product
+    - dim_customer
+
+producer:
+  default_count: 200
+  default_rate: 50
+  seed: 42
